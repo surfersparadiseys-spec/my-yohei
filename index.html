@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ToDoリスト</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #6b7280;
+      --border: #e3e5e8;
+      --accent: #3b6ef5;
+      --danger: #d64545;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #16181c;
+        --card: #1f2227;
+        --text: #e8eaed;
+        --muted: #9aa0a6;
+        --border: #33373d;
+        --accent: #6f95ff;
+        --danger: #ff6b6b;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    h1 { margin: 0 0 16px; font-size: 1.4rem; }
+    form { display: flex; gap: 8px; }
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+    }
+    .add {
+      padding: 10px 16px;
+      background: var(--accent);
+      color: #fff;
+    }
+    ul { list-style: none; padding: 0; margin: 20px 0 0; }
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    li input { width: 18px; height: 18px; accent-color: var(--accent); }
+    li span { flex: 1; word-break: break-word; }
+    li.done span { text-decoration: line-through; color: var(--muted); }
+    .delete {
+      background: none;
+      color: var(--danger);
+      padding: 4px 8px;
+    }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .clear { background: none; color: var(--muted); text-decoration: underline; }
+    .empty { color: var(--muted); text-align: center; padding: 24px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>📝 ToDoリスト</h1>
+    <form id="form">
+      <input id="input" type="text" placeholder="やることを入力…" autocomplete="off" required>
+      <button class="add" type="submit">追加</button>
+    </form>
+    <ul id="list"></ul>
+    <footer>
+      <span id="count"></span>
+      <button class="clear" id="clear" type="button">完了したものを削除</button>
+    </footer>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "todos";
+    const form = document.getElementById("form");
+    const input = document.getElementById("input");
+    const list = document.getElementById("list");
+    const count = document.getElementById("count");
+    const clearBtn = document.getElementById("clear");
+
+    // ブラウザに保存されたToDoを読み込む（ページを閉じても残る）
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      } catch {}
+    }
+
+    let todos = load();
+
+    function render() {
+      list.innerHTML = "";
+      if (todos.length === 0) {
+        list.innerHTML = '<li class="empty">まだ何もありません</li>';
+      }
+      todos.forEach((todo, i) => {
+        const li = document.createElement("li");
+        if (todo.done) li.className = "done";
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = todo.done;
+        check.addEventListener("change", () => {
+          todo.done = check.checked;
+          update();
+        });
+
+        const text = document.createElement("span");
+        text.textContent = todo.text;
+
+        const del = document.createElement("button");
+        del.className = "delete";
+        del.textContent = "削除";
+        del.addEventListener("click", () => {
+          todos.splice(i, 1);
+          update();
+        });
+
+        li.append(check, text, del);
+        list.append(li);
+      });
+
+      const remaining = todos.filter(t => !t.done).length;
+      count.textContent = `残り ${remaining} 件`;
+    }
+
+    function update() {
+      save();
+      render();
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      todos.push({ text, done: false });
+      input.value = "";
+      update();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      todos = todos.filter(t => !t.done);
+      update();
+    });
+
+    render();
+  </script>
+</body>
+</html>
